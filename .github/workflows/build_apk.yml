@@ -1,0 +1,48 @@
+name: Flutter Build APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Flutter Kurulumu
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.x'
+
+      - name: Sarkilari Buluttan Indir (Pixeldrain)
+        run: |
+          mkdir -p assets/audio
+          curl -L -o audio.zip "https://pixeldrain.com/api/file/RH6zopCg"
+          unzip -o audio.zip -d temp_unzip
+          if [ -d "temp_unzip/audio" ]; then
+            cp -r temp_unzip/audio/* assets/audio/
+          else
+            cp -r temp_unzip/* assets/audio/
+          fi
+          rm -rf temp_unzip audio.zip
+          ls -la assets/audio/
+          
+      - run: flutter pub get
+      
+      # Cihaz mimarilerine göre APK'ları bölen sihirli komut:
+      - run: flutter build apk --release --split-per-abi
+      
+      - name: ARM64 APK Yukle (Yeni Telefonlar ~75MB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: doganlar-arm64-v8a-apk
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+      - name: ARMv7 APK Yukle (Eski Telefonlar ~75MB)
+        uses: actions/upload-artifact@v4
+        with:
+          name: doganlar-armeabi-v7a-apk
+          path: build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+
+
